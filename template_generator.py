@@ -1,14 +1,19 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------------
-# Xcode 4 template generator for cocos2d project
-# (c) 2011 Ricardo Quesada
+# Xcode 4 template generator
 #
-# LICENSE: Dual License: MIT & GNU GPL v2 Whatever suits you best.
+# Based on the original code by Ricardo Quesda. 
+# Modifications & Ugly Hacks by Nicolas Goles D. 
 #
-# Given a directory, it generates the "Definitions" and "Nodes" elements
+# LICENSE: MIT
+#
+# Generates an Xcode4 template given several input parameters.
 #
 # Format taken from: http://blog.boreal-kiss.net/2011/03/11/a-minimal-project-template-for-xcode-4/
+#
+# NOTE: Not everything is automated, and some understanding about the Xcode4 template system
+# is still needed to use this script properly (read the link above).
 # ----------------------------------------------------------------------------
 '''
 Xcode 4 template generator
@@ -16,125 +21,26 @@ Xcode 4 template generator
 
 __docformat__ = 'restructuredtext'
 
+#Add here whatever you need before your Node
 _template_open_body = """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<dict>
-	<key>Ancestors</key>
-	<array>
-		<string>com.apple.dt.unit.cocoaTouchUniversalApplication</string>
-		<string>com.apple.dt.unit.coreDataCocoaTouchApplication</string>
-	</array>
-	<key>Concrete</key>
-	<true/>
-	<key>Description</key>
-	<string>This template provides an starting point for cocos2d for iOS.</string>
-	<key>Identifier</key>
-	<string>com.gandogames.engine</string>
-	<key>Kind</key>
-	<string>Xcode.Xcode3.ProjectTemplateUnitKind</string>
-	<key>Options</key>
-	<array>
-		<dict>
-			<key>Identifier</key>
-			<string>universalDeviceFamily</string>
-			<key>Units</key>
-			<dict>
-				<key>iPad</key>
-				<dict>
-					<key>Definitions</key>
-					<dict>
-						<key>en.lproj/MainWindow.xib</key>
-						<dict>
-							<key>Path</key>
-							<string>MainWindow_iPad.xib</string>
-						</dict>
-					</dict>
-				</dict>
-				<key>iPhone</key>
-				<dict>
-					<key>Definitions</key>
-					<dict>
-						<key>en.lproj/MainWindow.xib</key>
-						<dict>
-							<key>Path</key>
-							<string>MainWindow_iPhone.xib</string>
-						</dict>
-					</dict>
-				</dict>
-				<key>Universal</key>
-				<dict>
-					<key>Definitions</key>
-					<dict>
-						<key>iPad/___PACKAGENAMEASIDENTIFIER___AppDelegate_iPad.h</key>
-						<dict>
-							<key>Group</key>
-							<string>iPad</string>
-							<key>Path</key>
-							<string>___PACKAGENAMEASIDENTIFIER___AppDelegate_iPad.h</string>
-							<key>TargetIndices</key>
-							<array/>
-						</dict>
-						<key>iPad/___PACKAGENAMEASIDENTIFIER___AppDelegate_iPad.m</key>
-						<dict>
-							<key>Group</key>
-							<string>iPad</string>
-							<key>Path</key>
-							<string>___PACKAGENAMEASIDENTIFIER___AppDelegate_iPad.m</string>
-						</dict>
-						<key>iPad/en.lproj/MainWindow_iPad.xib</key>
-						<dict>
-							<key>Group</key>
-							<string>iPad</string>
-							<key>Path</key>
-							<string>MainWindow_iPad_Universal.xib</string>
-						</dict>
-						<key>iPhone/___PACKAGENAMEASIDENTIFIER___AppDelegate_iPhone.h</key>
-						<dict>
-							<key>Group</key>
-							<string>iPhone</string>
-							<key>Path</key>
-							<string>___PACKAGENAMEASIDENTIFIER___AppDelegate_iPhone.h</string>
-							<key>TargetIndices</key>
-							<array/>
-						</dict>
-						<key>iPhone/___PACKAGENAMEASIDENTIFIER___AppDelegate_iPhone.m</key>
-						<dict>
-							<key>Group</key>
-							<string>iPhone</string>
-							<key>Path</key>
-							<string>___PACKAGENAMEASIDENTIFIER___AppDelegate_iPhone.m</string>
-						</dict>
-						<key>iPhone/en.lproj/MainWindow_iPhone.xib</key>
-						<dict>
-							<key>Group</key>
-							<string>iPhone</string>
-							<key>Path</key>
-							<string>MainWindow_iPhone_Universal.xib</string>
-						</dict>
-					</dict>
-					<key>Nodes</key>
-					<array>
-						<string>iPhone/___PACKAGENAMEASIDENTIFIER___AppDelegate_iPhone.h</string>
-						<string>iPhone/___PACKAGENAMEASIDENTIFIER___AppDelegate_iPhone.m</string>
-						<string>iPhone/en.lproj/MainWindow_iPhone.xib</string>
-						<string>iPad/___PACKAGENAMEASIDENTIFIER___AppDelegate_iPad.h</string>
-						<string>iPad/___PACKAGENAMEASIDENTIFIER___AppDelegate_iPad.m</string>
-						<string>iPad/en.lproj/MainWindow_iPad.xib</string>
-					</array>
-				</dict>
-			</dict>
-		</dict>
-	</array>	
-"""
+<dict>"""
 
+_template_description = None
+_template_identifier = None
+_template_concrete = "yes"
+_template_ancestors = None
+_template_kind = "Xcode.Xcode3.ProjectTemplateUnitKind"
 _template_close_body = "</dict>\n</plist>"
+_template_plist_name = "TemplateInfo.plist"
 
 # python
 import sys
 import os
 import getopt
 import glob
+import shutil
 
 class Xcode4Template(object):
 	def __init__( self, directory, group=None):
@@ -152,16 +58,11 @@ class Xcode4Template(object):
 		for currentFile in glob.glob( os.path.join(path, self.wildcard) ):
 			if os.path.isdir(currentFile):
 				name_extension = currentFile.split('.')
-				extension = None
-				
-				if len(name_extension) == 2:
-					extension = name_extension[-1]
+				extension = name_extension[-1]
 										
-					if extension not in self.ignore_dir_extensions:
-						self.scandirs(currentFile)
-					
-				else:
+				if extension not in self.ignore_dir_extensions:
 					self.scandirs(currentFile)
+					
 			else:
 				self.include_file_to_append( currentFile )
    
@@ -184,7 +85,6 @@ class Xcode4Template(object):
 		
 		groups = path.split('/')
 		
-		
 		output_body.append("\t\t\t<key>Group</key>\t\t\t")
 		output_body.append("\t\t\t<array>")
 		for group in groups[:(len(groups)-1)]:
@@ -201,7 +101,8 @@ class Xcode4Template(object):
 	#
 	# Generate the "Definitions" section
 	#
-	def generate_definitions( self ):
+	def generate_definitions( self ):	
+		output_banner = "\n\t<!-- Definitions section -->"
 		output_header = "\t<key>Definitions</key>"
 		output_dict_open = "\t<dict>"
 		output_dict_close = "\t</dict>"
@@ -232,6 +133,7 @@ class Xcode4Template(object):
 			
 			self.append_definition( output_body, path, group, extension in self.ignore_extensions )
 
+		self.output.append( output_banner )
 		self.output.append( output_header )
 		self.output.append( output_dict_open )
 		self.output.append( "\n".join( output_body ) )
@@ -241,6 +143,7 @@ class Xcode4Template(object):
 	# Generates the "Nodes" section
 	#
 	def generate_nodes( self ):
+		output_banner = "\n\t<!-- Nodes section -->"
 		output_header = "\t<key>Nodes</key>"
 		output_open = "\t<array>"
 		output_close = "\t</array>"
@@ -249,33 +152,88 @@ class Xcode4Template(object):
 		for path in self.files_to_include:
 			output_body.append("\t\t<string>%s</string>" % path )
 
+		self.output.append( output_banner )
 		self.output.append( output_header )
 		self.output.append( output_open )
 		self.output.append( "\n".join( output_body ) )
 		self.output.append( output_close )
 	  
 	#
-	# Generates the plist. Send it to to stdout
+	#	Format the output plist string
 	#
-	def generate_xml( self ):
+	def format_xml( self ):
 		self.output.append( _template_open_body )
+		
+		if _template_description or _template_identifier or _template_kind:
+			self.output.append ("\t<!--Header Section-->")
+		
+		if _template_description:
+			self.output.append( "\t<key>Description</key>\n\t<string>%s</string>" % _template_description )
+
+		if _template_identifier:
+			self.output.append( "\t<key>Identifier</key>\n\t<string>%s</string>" % _template_identifier )
+		
+		self.output.append( "\t<key>Concrete</key>")
+		
+		if _template_concrete.lower() == "yes":
+			self.output.append( "\t<string>True</string>" )
+		elif _template_concrete.lower() == "no":
+			self.output.append( "\t<string>False</string>" )
+		
+		self.output.append( ("\t<key>Kind</key>\n\t<string>%s</string>" % _template_kind) )
+		
+		if _template_ancestors:
+			self.output.append("\t<key>Ancestors</key>\n\t<array>")
+			ancestors = _template_ancestors.split(" ")
+			for ancestor in ancestors:
+				self.output.append("\t\t<string>%s</string>" % str(ancestor))
+			self.output.append("\t</array>")				
+		
 		self.generate_definitions()
 		self.generate_nodes()
 		self.output.append( _template_close_body )
+	
+	#
+	#	Create "TemplateInfo.plist" file.
+	#
+	def write_xml( self ):
+		FILE = open( _template_plist_name, "w" )
+		FILE.writelines( self.output )
+		FILE.close()
 
-		print "\n".join( self.output )
-
+	#
+	#	Generates the template directory.
+	#
+	def generate_directory ( self ):
+		if not os.path.exists(self.directory + ".xctemplate"):
+		    os.makedirs(self.directory + ".xctemplate")
+		
+	#
+	#	Arrange Files
+	#
+	def arrange_files ( self ):
+		shutil.move( self.directory, self.directory + ".xctemplate" )
+		shutil.move( _template_plist_name, self.directory + ".xctemplate")
+	
+	#
+	#	Scan Dirs, format & write.
+	#
 	def generate( self ):
 		self.scandirs( self.directory )
-		self.generate_xml()
+		self.format_xml()
+		self.write_xml()
 
 def help():
 	print "%s v1.0 - An utility to generate Xcode 4 templates" % sys.argv[0]
 	print "Usage:"
+	print "\t-c concrete (concrete or \"abstract\" xcode template)"	
 	print "\t-d directory (directory to parse)"
 	print "\t-g group (group name for Xcode template)"
+	print "\t--description \"This template description\""
+	print "\t--identifier (string to identify this template)"
+	print "\t--ancestors (string separated by spaces containing all ancestor ids)"
 	print "\nExample:"
-	print "\t%s -d cocos2d -g cocos2d" % sys.argv[0]
+	print "\t%s -d cocos2d --description \"This is my template\" --identifier com.yoursite.template --ancestors com.yoursite.ancestor1 --concrete=False " % sys.argv[0]
 	sys.exit(-1)
 
 if __name__ == "__main__":
@@ -286,12 +244,21 @@ if __name__ == "__main__":
 	group = None
 	argv = sys.argv[1:]
 	try:								
-		opts, args = getopt.getopt(argv, "d:g:", ["directory=","group="])
+		opts, args = getopt.getopt(argv, "d:g:description:identifier:ancestors:c", ["directory=","group=","description=", "identifier=", "ancestors=", "concrete="])
 		for opt, arg in opts:
 			if opt in ("-d","--directory"):
-				directory = arg
+				directory = arg.strip('/')
 			if opt in ("-g","--group"):
 				group = arg
+			if opt in ("--description"):
+				_template_description = arg
+			if opt in ("--identifier"):
+				_template_identifier = arg
+			if opt in ("--ancestors"):
+				_template_ancestors = arg
+			if opt in ("-c", "--concrete"):
+				_template_concrete = arg
+				
 	except getopt.GetoptError,e:
 		print e
 
@@ -300,3 +267,5 @@ if __name__ == "__main__":
 
 	gen = Xcode4Template( directory=directory, group=group )
 	gen.generate()
+	gen.generate_directory()
+	gen.arrange_files()

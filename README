@@ -1,0 +1,17 @@
+# ----------------------------------------------------------------------------
+# Xcode 4 template generator
+#
+# Based on the original code by Ricardo Quesda. 
+# Modifications & ugly hacks by Nicolas Goles D. 
+#
+# LICENSE: MIT
+#
+# Generates an Xcode4 template given several input parameters.
+#
+# Format taken from: http://blog.boreal-kiss.net/2011/03/11/a-minimal-project-template-for-xcode-4/
+#
+# NOTE: Not everything is automated, and some understanding about the Xcode4 template system
+# is still needed to use this script properly (read the link above).
+# ----------------------------------------------------------------------------
+
+Notes to be added soon.
