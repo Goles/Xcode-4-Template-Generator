@@ -3,7 +3,7 @@
 # ----------------------------------------------------------------------------
 # Xcode 4 template generator
 #
-# Based on the original code by Ricardo Quesda. 
+# Based on the original code by Ricardo Quesada. 
 # Modifications & Ugly Hacks by Nicolas Goles D. 
 #
 # LICENSE: MIT
@@ -32,8 +32,9 @@ _template_identifier = None
 _template_concrete = "yes"
 _template_ancestors = None
 _template_kind = "Xcode.Xcode3.ProjectTemplateUnitKind"
-_template_close_body = "</dict>\n</plist>"
+_template_close_body = "\n</dict>\n</plist>"
 _template_plist_name = "TemplateInfo.plist"
+_template_shared_settings = None
 
 # python
 import sys
@@ -79,7 +80,7 @@ class Xcode4Template(object):
 	# append the definitions
 	#
 	def append_definition( self, output_body, path, group, dont_index ):
-		output_body.append("\t\t<key>%s</key>" % path )
+		output_body.append("\n\t\t<key>%s</key>" % path )
 
 		output_body.append("\t\t<dict>")
 		
@@ -102,10 +103,10 @@ class Xcode4Template(object):
 	# Generate the "Definitions" section
 	#
 	def generate_definitions( self ):	
-		output_banner = "\n\t<!-- Definitions section -->"
-		output_header = "\t<key>Definitions</key>"
-		output_dict_open = "\t<dict>"
-		output_dict_close = "\t</dict>"
+		output_banner = "\n\n\t<!-- Definitions section -->"
+		output_header = "\n\t<key>Definitions</key>"
+		output_dict_open = "\n\t<dict>"
+		output_dict_close = "\n\t</dict>"
 
 		output_body = []
 		for path in self.files_to_include:
@@ -143,10 +144,10 @@ class Xcode4Template(object):
 	# Generates the "Nodes" section
 	#
 	def generate_nodes( self ):
-		output_banner = "\n\t<!-- Nodes section -->"
-		output_header = "\t<key>Nodes</key>"
-		output_open = "\t<array>"
-		output_close = "\t</array>"
+		output_banner = "\n\n\t<!-- Nodes section -->"
+		output_header = "\n\t<key>Nodes</key>"
+		output_open = "\n\t<array>\n"
+		output_close = "\n\t</array>"
 
 		output_body = []
 		for path in self.files_to_include:
@@ -165,30 +166,52 @@ class Xcode4Template(object):
 		self.output.append( _template_open_body )
 		
 		if _template_description or _template_identifier or _template_kind:
-			self.output.append ("\t<!--Header Section-->")
+			self.output.append ("\n\t<!--Header Section-->")
 		
-		if _template_description:
-			self.output.append( "\t<key>Description</key>\n\t<string>%s</string>" % _template_description )
+		if _template_description != None:
+			self.output.append( "\n\t<key>Description</key>\n\t<string>%s</string>" % _template_description )
 
 		if _template_identifier:
-			self.output.append( "\t<key>Identifier</key>\n\t<string>%s</string>" % _template_identifier )
+			self.output.append( "\n\t<key>Identifier</key>\n\t<string>%s</string>" % _template_identifier )
 		
-		self.output.append( "\t<key>Concrete</key>")
+		self.output.append( "\n\t<key>Concrete</key>")
 		
 		if _template_concrete.lower() == "yes":
-			self.output.append( "\t<string>True</string>" )
+			self.output.append( "\n\t<string>True</string>" )
 		elif _template_concrete.lower() == "no":
-			self.output.append( "\t<string>False</string>" )
+			self.output.append( "\n\t<string>False</string>" )
 		
-		self.output.append( ("\t<key>Kind</key>\n\t<string>%s</string>" % _template_kind) )
+		self.output.append( ("\n\t<key>Kind</key>\n\t<string>%s</string>" % _template_kind) )
 		
 		if _template_ancestors:
-			self.output.append("\t<key>Ancestors</key>\n\t<array>")
+			self.output.append("\n\t<key>Ancestors</key>\n\t<array>")
 			ancestors = _template_ancestors.split(" ")
 			for ancestor in ancestors:
-				self.output.append("\t\t<string>%s</string>" % str(ancestor))
-			self.output.append("\t</array>")				
-		
+				self.output.append("\n\t\t<string>%s</string>" % str(ancestor))
+			self.output.append("\n\t</array>")
+
+		# if _template_shared_settings:
+		# 		print("TROLOLOLO" + _template_shared_settings)	
+		# 		self.output.append("\t<key>Project</key>")
+		# 		self.output.append("\t<dict>")
+		# 		
+		# 		shared_settings = _template_shared_settings.split(" ")
+		# 		
+		# 		if len(shared_settings) % 2 != 0:
+		# 			print "Shared Settings parameters should be an even number (use '*' if only key is needed)"
+		# 			sys.exit(-1)
+		# 
+		# 		for i in range( len(shared_settings - 1) ):
+		# 			
+		# 			if( str(shared_settings[i]) != "*"):				
+		# 				self.output.append("\t</dict>")
+		# 				self.output.append("\t\t<key> %s </key>" % str(shared_settings[i]))
+		# 				
+		# 				if (shared_settings[i+1] == "*"):
+		# 					self.output.append("\t\t<string></string>")
+		# 				else:
+		# 					self.output.append("\t\t<string>%s</string>" % str(shared_settings[i+1]))
+	
 		self.generate_definitions()
 		self.generate_nodes()
 		self.output.append( _template_close_body )
@@ -244,20 +267,22 @@ if __name__ == "__main__":
 	group = None
 	argv = sys.argv[1:]
 	try:								
-		opts, args = getopt.getopt(argv, "d:g:description:identifier:ancestors:c", ["directory=","group=","description=", "identifier=", "ancestors=", "concrete="])
+		opts, args = getopt.getopt(argv, "d:g:description:identifier:ancestors:c:s", ["directory=","group=","description=", "identifier=", "ancestors=", "concrete=", "settings="])
 		for opt, arg in opts:
 			if opt in ("-d","--directory"):
 				directory = arg.strip('/')
-			if opt in ("-g","--group"):
+			elif opt in ("-g","--group"):
 				group = arg
-			if opt in ("--description"):
+			elif opt in ("--description"):
 				_template_description = arg
-			if opt in ("--identifier"):
+			elif opt in ("--identifier"):
 				_template_identifier = arg
-			if opt in ("--ancestors"):
+			elif opt in ("--ancestors"):
 				_template_ancestors = arg
-			if opt in ("-c", "--concrete"):
+			elif opt in ("-c", "--concrete"):
 				_template_concrete = arg
+			elif opt in ("-s", "--settings"):
+				_template_shared_settings = arg
 				
 	except getopt.GetoptError,e:
 		print e
