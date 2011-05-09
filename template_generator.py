@@ -189,28 +189,6 @@ class Xcode4Template(object):
 			for ancestor in ancestors:
 				self.output.append("\n\t\t<string>%s</string>" % str(ancestor))
 			self.output.append("\n\t</array>")
-
-		# if _template_shared_settings:
-		# 		print("TROLOLOLO" + _template_shared_settings)	
-		# 		self.output.append("\t<key>Project</key>")
-		# 		self.output.append("\t<dict>")
-		# 		
-		# 		shared_settings = _template_shared_settings.split(" ")
-		# 		
-		# 		if len(shared_settings) % 2 != 0:
-		# 			print "Shared Settings parameters should be an even number (use '*' if only key is needed)"
-		# 			sys.exit(-1)
-		# 
-		# 		for i in range( len(shared_settings - 1) ):
-		# 			
-		# 			if( str(shared_settings[i]) != "*"):				
-		# 				self.output.append("\t</dict>")
-		# 				self.output.append("\t\t<key> %s </key>" % str(shared_settings[i]))
-		# 				
-		# 				if (shared_settings[i+1] == "*"):
-		# 					self.output.append("\t\t<string></string>")
-		# 				else:
-		# 					self.output.append("\t\t<string>%s</string>" % str(shared_settings[i+1]))
 	
 		self.generate_definitions()
 		self.generate_nodes()
