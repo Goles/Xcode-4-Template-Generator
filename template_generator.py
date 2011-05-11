@@ -190,27 +190,29 @@ class Xcode4Template(object):
 				self.output.append("\n\t\t<string>%s</string>" % str(ancestor))
 			self.output.append("\n\t</array>")
 
-		# if _template_shared_settings:
-		# 		print("TROLOLOLO" + _template_shared_settings)	
-		# 		self.output.append("\t<key>Project</key>")
-		# 		self.output.append("\t<dict>")
-		# 		
-		# 		shared_settings = _template_shared_settings.split(" ")
-		# 		
-		# 		if len(shared_settings) % 2 != 0:
-		# 			print "Shared Settings parameters should be an even number (use '*' if only key is needed)"
-		# 			sys.exit(-1)
-		# 
-		# 		for i in range( len(shared_settings - 1) ):
-		# 			
-		# 			if( str(shared_settings[i]) != "*"):				
-		# 				self.output.append("\t</dict>")
-		# 				self.output.append("\t\t<key> %s </key>" % str(shared_settings[i]))
-		# 				
-		# 				if (shared_settings[i+1] == "*"):
-		# 					self.output.append("\t\t<string></string>")
-		# 				else:
-		# 					self.output.append("\t\t<string>%s</string>" % str(shared_settings[i+1]))
+		if _template_shared_settings:
+				self.output.append("\n\t<key>Project</key>")
+				self.output.append("\n\t<array>\n\t\t<dict>")
+				self.output.append("\n\t\t\t<key>SharedSettings</key>")
+				self.output.append("\n\t\t\t<dict>")
+				
+				shared_settings = _template_shared_settings.split(" ")
+				
+				if len(shared_settings) % 2 != 0:
+					print "Shared Settings parameters should be an even number (use '*' if only key is needed)"
+					sys.exit(-1)
+				
+				for i in range( len(shared_settings) - 1 ) :
+					
+					if( str(shared_settings[i]) != "*"):				
+						self.output.append("\n\t\t\t\t<key>%s</key>" % str(shared_settings[i]))
+						
+						if (shared_settings[i+1] == "*"):
+							self.output.append("\n\t\t\t\t<string></string>")
+						else:
+							self.output.append("\n\t\t\t\t<string>%s</string>" % str(shared_settings[i+1]))
+							
+				self.output.append("\n\t\t\t</dict>\n\t\t</dict>\n\t</array>")
 	
 		self.generate_definitions()
 		self.generate_nodes()
@@ -255,8 +257,9 @@ def help():
 	print "\t--description \"This template description\""
 	print "\t--identifier (string to identify this template)"
 	print "\t--ancestors (string separated by spaces containing all ancestor ids)"
+	print "\t--settings Specify build settings for the project"
 	print "\nExample:"
-	print "\t%s -d cocos2d --description \"This is my template\" --identifier com.yoursite.template --ancestors com.yoursite.ancestor1 --concrete=False " % sys.argv[0]
+	print "\t%s -d cocos2d --description \"This is my template\" -i com.yoursite.template --ancestors com.yoursite.ancestor1 -c no --settings \"GCC_THUMB_SUPPORT[arch=armv6] *\" " % sys.argv[0]
 	sys.exit(-1)
 
 if __name__ == "__main__":
@@ -267,20 +270,27 @@ if __name__ == "__main__":
 	group = None
 	argv = sys.argv[1:]
 	try:								
-		opts, args = getopt.getopt(argv, "d:g:description:identifier:ancestors:c:s", ["directory=","group=","description=", "identifier=", "ancestors=", "concrete=", "settings="])
+		opts, args = getopt.getopt(argv, "d:g:i:a:c:", ["directory=","group=", "identifier=", "ancestors=", "concrete=", "settings=", "description="])
 		for opt, arg in opts:
+			
 			if opt in ("-d","--directory"):
 				directory = arg.strip('/')
+		
 			elif opt in ("-g","--group"):
 				group = arg
+			
 			elif opt in ("--description"):
 				_template_description = arg
+			
 			elif opt in ("--identifier"):
 				_template_identifier = arg
+			
 			elif opt in ("--ancestors"):
 				_template_ancestors = arg
+			
 			elif opt in ("-c", "--concrete"):
 				_template_concrete = arg
+			
 			elif opt in ("-s", "--settings"):
 				_template_shared_settings = arg
 				
