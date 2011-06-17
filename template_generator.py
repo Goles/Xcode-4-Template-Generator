@@ -230,21 +230,13 @@ class Xcode4Template(object):
 	#
 	#	Generates the template directory.
 	#
-	def generate_directory ( self ):
-		if not os.path.exists(self.directory + ".xctemplate"):
-		    os.makedirs(self.directory + ".xctemplate")
+	def pack_template_dir ( self, full_output_path ):
 		
-	#
-	#	Arrange Files
-	#
-	def arrange_files ( self, output_path ):
-		shutil.move( self.directory, self.directory + ".xctemplate" )
-		shutil.move( _template_plist_name, self.directory + ".xctemplate")
-		
-		if not os.path.exists(output_path):
-		    os.makedirs(output_path)
-		
-		shutil.move( self.directory + ".xctemplate", output_path)
+		(template_path, template_name) = os.path.split( os.path.normpath(full_output_path) )		
+		(_, base_dir) = os.path.split(self.directory)
+		target_dir = os.path.normpath(full_output_path) + "/" + base_dir
+		shutil.copytree(self.directory, target_dir)
+		shutil.move("TemplateInfo.plist", os.path.normpath(full_output_path))
 	
 	#
 	#	Scan Dirs, format & write.
@@ -283,7 +275,7 @@ if __name__ == "__main__":
 		for opt, arg in opts:
 			
 			if opt in ("-d","--directory"):
-				directory = arg.strip('/')
+				directory = os.path.abspath(arg.strip('/'))
 		
 			elif opt in ("-g","--group"):
 				group = arg
@@ -314,5 +306,4 @@ if __name__ == "__main__":
 
 	gen = Xcode4Template( directory=directory, group=group )
 	gen.generate()
-	gen.generate_directory()
-	gen.arrange_files(output)
+	gen.pack_template_dir(output)
