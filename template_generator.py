@@ -54,6 +54,7 @@ class Xcode4Template(object):
 		self.group = group					# fixed group name
 		self.group_index = 1				# automatic group name taken from path
 		self.output = []
+		self.output_path = None
 
 	def scandirs(self, path):
 		for currentFile in glob.glob( os.path.join(path, self.wildcard) ):
@@ -236,9 +237,14 @@ class Xcode4Template(object):
 	#
 	#	Arrange Files
 	#
-	def arrange_files ( self ):
+	def arrange_files ( self, output_path ):
 		shutil.move( self.directory, self.directory + ".xctemplate" )
 		shutil.move( _template_plist_name, self.directory + ".xctemplate")
+		
+		if not os.path.exists(output_path):
+		    os.makedirs(output_path)
+		
+		shutil.move( self.directory + ".xctemplate", output_path)
 	
 	#
 	#	Scan Dirs, format & write.
@@ -254,6 +260,7 @@ def help():
 	print "\t-c concrete (concrete or \"abstract\" xcode template)"	
 	print "\t-d directory (directory to parse)"
 	print "\t-g group (group name for Xcode template)"
+	print "\t-o output (output path)"
 	print "\t--description \"This template description\""
 	print "\t--identifier (string to identify this template)"
 	print "\t--ancestors (string separated by spaces containing all ancestor ids)"
@@ -268,9 +275,11 @@ if __name__ == "__main__":
 
 	directory = None
 	group = None
+	output = None
+	
 	argv = sys.argv[1:]
 	try:								
-		opts, args = getopt.getopt(argv, "d:g:i:a:c:", ["directory=","group=", "identifier=", "ancestors=", "concrete=", "settings=", "description="])
+		opts, args = getopt.getopt(argv, "d:g:i:a:c:o:", ["directory=","group=", "identifier=", "ancestors=", "concrete=", "output=", "settings=", "description="])
 		for opt, arg in opts:
 			
 			if opt in ("-d","--directory"):
@@ -278,6 +287,9 @@ if __name__ == "__main__":
 		
 			elif opt in ("-g","--group"):
 				group = arg
+			
+			elif opt in ("-o", "--output"):
+				output = arg
 			
 			elif opt in ("--description"):
 				_template_description = arg
@@ -303,4 +315,4 @@ if __name__ == "__main__":
 	gen = Xcode4Template( directory=directory, group=group )
 	gen.generate()
 	gen.generate_directory()
-	gen.arrange_files()
+	gen.arrange_files(output)
