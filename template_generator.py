@@ -230,8 +230,7 @@ class Xcode4Template(object):
 	#
 	#	Generates the template directory.
 	#
-	def pack_template_dir ( self, full_output_path ):
-		
+	def pack_template_dir ( self, full_output_path ):	
 		(template_path, template_name) = os.path.split( os.path.normpath(full_output_path) )		
 		(_, base_dir) = os.path.split(self.directory)
 		target_dir = os.path.normpath(full_output_path) + "/" + base_dir
