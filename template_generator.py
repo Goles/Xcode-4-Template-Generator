@@ -44,26 +44,26 @@ import glob
 import shutil
 
 class Xcode4Template(object):
-	def __init__( self, directory, group = None, in_output_path = None):
-		self.directory = directory
+	def __init__( self, directories, group = None, in_output_path = None):
+		self.currentRootDirectory = None
+		self.directories = directories #directory list		
 		self.files_to_include = []
 		self.wildcard = '*'
-		self.allowed_extensions = ['h', 'hpp', 'c', 'cpp', 'cc', 'm', 'mm'] # Extensions of files to add to project.
+		self.allowed_extensions = ['h', 'hpp', 'c', 'cpp', 'cc', 'm', 'mm', 'lua', 'png', 'fnt'] # Extensions of files to add to project.
 		self.ignore_dir_extensions = ['xcodeproj']
 		self.group = group # fixed group name
 		self.group_index = 1 # automatic group name taken from path
 		self.output = []
 		self.output_path = in_output_path
 
-	def scandirs(self, path):
+	def scandirs(self, path):		
 		for currentFile in glob.glob( os.path.join(path, self.wildcard) ):
 			if os.path.isdir(currentFile):
 				name_extension = currentFile.split('.')
 				extension = name_extension[-1]
 										
 				if extension not in self.ignore_dir_extensions:
-					self.scandirs(currentFile)
-					
+					self.scandirs(currentFile)					
 			else:
 				self.include_file_to_append( currentFile )
    
@@ -80,7 +80,7 @@ class Xcode4Template(object):
 	# Change the Absolute Path to a relative path ( starting from directory that scandirs is using )
 	#
 	def change_path_to_relative( self, absolute_path ):	
-		return os.path.relpath( absolute_path, os.path.split( os.path.relpath(self.directory) )[0])
+		return os.path.relpath( absolute_path, os.path.split( os.path.relpath(self.currentRootDirectory) )[0])
 	
 	#
 	# append the definitions
@@ -90,10 +90,8 @@ class Xcode4Template(object):
 		output_body.append("\t\t<dict>")
 		
 		#Fix the absolute path so that the Xcode Groups created for the .xctemplate directory are relative.
-		path = 	self.change_path_to_relative(path)
-		
-		groups = path.split('/')
-		
+		path = 	self.change_path_to_relative(path)		
+		groups = path.split('/')		
 		output_body.append("\t\t\t<key>Group</key>\t\t\t")
 		output_body.append("\t\t\t<array>")
 	
@@ -102,7 +100,6 @@ class Xcode4Template(object):
 
 		output_body.append("\t\t\t</array>")
 		output_body.append("\t\t\t<key>Path</key>\n\t\t\t<string>%s</string>" % path )
-
 		output_body.append("\t\t</dict>")
 
 	#
@@ -237,21 +234,26 @@ class Xcode4Template(object):
 	#
 	def pack_template_dir ( self, full_output_path ):
 		(template_path, template_name) = os.path.split( os.path.normpath(full_output_path) )		
-		(_, base_dir) = os.path.split(self.directory)
+
+		for directory in self.directories:	
+			(_, base_dir) = os.path.split(directory)
 		
-		if(os.path.splitext(template_name)[1] != ".xctemplate"):
-			full_output_path = os.path.join(template_path, template_name + ".xctemplate")
+			if(os.path.splitext(template_name)[1] != ".xctemplate"):
+				full_output_path = os.path.join(template_path, template_name + ".xctemplate")
 			
-		target_dir = os.path.normpath(full_output_path) + "/" + base_dir
+			target_dir = os.path.normpath(full_output_path) + "/" + base_dir	
+			shutil.copytree(directory, target_dir)
 		
-		shutil.copytree(self.directory, target_dir)
 		shutil.move("TemplateInfo.plist", os.path.normpath(full_output_path))
 	
 	#
 	#	Scan Dirs, format & write.
 	#
-	def generate( self ):
-		self.scandirs( self.directory )
+	def generate( self ):	
+		for aDirectory in self.directories:
+			self.currentRootDirectory = aDirectory
+			self.scandirs( aDirectory )
+									
 		self.format_xml()
 		self.write_xml()
 
@@ -259,7 +261,7 @@ def help():
 	print "%s v1.0 - An utility to generate Xcode 4 templates" % sys.argv[0]
 	print "Usage:"
 	print "\t-c concrete (concrete or \"abstract\" xcode template)"	
-	print "\t-d directory (directory to parse)"
+	print "\t-d directory or space separated directory list to add to Template"
 	print "\t-g group (group name for Xcode template)"
 	print "\t-o output (output path)"
 	print "\t--description \"This template description\""
@@ -274,18 +276,20 @@ if __name__ == "__main__":
 	if len( sys.argv ) == 1:
 		help()
 
-	directory = None
+	directories = []
 	group = None
 	output = None
 	
 	argv = sys.argv[1:]
 	try:								
-		opts, args = getopt.getopt(argv, "d:g:i:a:c:o:", ["directory=","group=", "identifier=", "ancestors=", "concrete=", "output=", "settings=", "description="])
+		opts, args = getopt.getopt(argv, "d:g:i:a:c:o:", ["directories=","group=", "identifier=", "ancestors=", "concrete=", "output=", "settings=", "description="])
 		for opt, arg in opts:
 			
 			if opt in ("-d","--directory"):
-				directory = os.path.abspath(arg.strip('/'))
-		
+				for directory in arg.split(" "):
+					directory = os.path.abspath(directory.strip('/'))
+					directories.append(directory)
+					
 			elif opt in ("-g","--group"):
 				group = arg
 			
@@ -313,6 +317,6 @@ if __name__ == "__main__":
 	if directory == None:
 		help()
 
-	gen = Xcode4Template( directory = directory, group = group, in_output_path = output )
+	gen = Xcode4Template( directories, group, output )
 	gen.generate()
 	gen.pack_template_dir(output)
