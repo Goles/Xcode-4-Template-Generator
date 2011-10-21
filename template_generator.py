@@ -44,10 +44,10 @@ import glob
 import shutil
 
 class Xcode4Template(object):
-    def __init__( self, directories, group = None, in_output_path = None, ignore_directories = None):
+    def __init__( self, directories, group = None, in_output_path = None, ignored_files = None):
         self.currentRootDirectory = None
         self.directories = directories #directory list
-        self.ignore_directories = ignore_directories        
+        self.ignored_files = ignored_files        
         self.files_to_include = []
         self.wildcard = '*'
         self.allowed_extensions = ['h', 'hpp', 'c', 'cpp', 'cc', 'm', 'mm', 'lua', 'png', 'fnt', 'pvr'] # Extensions of files to add to project.
@@ -63,7 +63,7 @@ class Xcode4Template(object):
                 name_extension = currentFile.split('.')
                 extension = name_extension[-1]
                                 
-                if extension not in self.ignore_dir_extensions and currentFile not in self.ignore_directories:
+                if extension not in self.ignore_dir_extensions and currentFile not in self.ignored_files:
                     self.scandirs(currentFile)  
                                 
             else:
@@ -83,9 +83,9 @@ class Xcode4Template(object):
     #
     def ignore_files(self, directory_entered, directory_contents):
         should_ignore = []
-        for directory in self.ignore_directories:
+        for file in self.ignored_files:
             for content in directory_contents:
-                if os.path.join(os.path.abspath(directory_entered), content) == directory:
+                if os.path.join(os.path.abspath(directory_entered), content) == file:
                     should_ignore.append(content)
         return should_ignore
         
@@ -245,7 +245,7 @@ class Xcode4Template(object):
     #
     #   Generates the template directory.
     #
-    def pack_template_dir ( self, full_output_path, ignore_directories ):
+    def pack_template_dir ( self, full_output_path ):
         if full_output_path is None:
             full_output_path = os.path.abspath("./UntitledTemplate")
             
@@ -276,7 +276,7 @@ class Xcode4Template(object):
         self.write_xml()
 
 def help():
-    print "%s v1.0 - An utility to generate Xcode 4 templates" % sys.argv[0]
+    print "%s v1.1 - Xcode 4 Template Generator v1.1" % sys.argv[0]
     print "Usage:"
     print "\t-c concrete (concrete or \"abstract\" Xcode template)" 
     print "\t-d one or more space separated directories (e.g -d \"box2d/ someLib/ someOtherLib/\")"
@@ -286,7 +286,7 @@ def help():
     print "\t--identifier (string to identify this template)"
     print "\t--ancestors (string separated by spaces containing all ancestor ids)"
     print "\t--settings Specify build settings for the project (experimental)"
-    print "\t--ignore_dirs Specify a space separated list of directories to ignore (e.g \"ignore/a/dir also/ignore/this/dir\")"
+    print "\t--ignore_files Specify a space separated list of files to ignore (e.g \"ignore/a/dir ignore/some/file.txt\")"
     print "\nExample:"
     print "\t%s -d cocos2d --description \"This is my template\" -i com.yoursite.template --ancestors com.yoursite.ancestor1 -c no --settings \"GCC_THUMB_SUPPORT[arch=armv6] *\" " % sys.argv[0]
     sys.exit(-1)
@@ -296,13 +296,13 @@ if __name__ == "__main__":
         help()
 
     directories = []
-    ignore_directories = []
+    ignored_files = []
     group = None
     output = None
     
     argv = sys.argv[1:]
     try:                                
-        opts, args = getopt.getopt(argv, "d:g:i:a:c:o:", ["directories=","group=", "identifier=", "ancestors=", "concrete=", "output=", "settings=", "description=", "ignore_dirs="])
+        opts, args = getopt.getopt(argv, "d:g:i:a:c:o:", ["directories=","group=", "identifier=", "ancestors=", "concrete=", "output=", "settings=", "description=", "ignore_files="])
         for opt, arg in opts:
             
             if opt in ("-d","--directory"):
@@ -331,10 +331,10 @@ if __name__ == "__main__":
             elif opt in ("-s", "--settings"):
                 _template_shared_settings = arg
             
-            elif opt in ("--ignore_dir"):
+            elif opt in ("--ignore_files"):
                 for directory in arg.split(" "):
                     directory = os.path.abspath(directory.strip('/'))
-                    ignore_directories.append(directory)
+                    ignored_files.append(directory)
                 
     except getopt.GetoptError,e:
         print e
@@ -342,6 +342,6 @@ if __name__ == "__main__":
     if directory == None:
         help()
 
-    gen = Xcode4Template(directories, group, output, ignore_directories)
+    gen = Xcode4Template(directories, group, output, ignored_files)
     gen.generate()
-    gen.pack_template_dir(output, ignore_directories)
+    gen.pack_template_dir(output)
