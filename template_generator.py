@@ -35,6 +35,8 @@ _template_kind = "Xcode.Xcode3.ProjectTemplateUnitKind"
 _template_close_body = "\n</dict>\n</plist>"
 _template_plist_name = "TemplateInfo.plist"
 _template_shared_settings = None
+_template_script = None
+_template_script_shell_path = "/bin/bash"
 
 # python imports
 import sys
@@ -229,7 +231,25 @@ class Xcode4Template(object):
                             self.output.append("\n\t\t\t\t<string>%s</string>" % str(shared_settings[i+1]))
                             
                 self.output.append("\n\t\t\t</dict>\n\t\t</dict>\n\t</array>")
-    
+        
+        if _template_script:
+            script_file = open(_template_script, 'r')            
+            if not script_file:
+                sys.exit("Error reading " + _template_script)
+                
+            self.output.append("\n\t<key>Targets</key>")
+            self.output.append("\n\t<array>\n\t\t<dict>")
+            self.output.append("\n\t\t\t<key>BuildPhases</key>")
+            self.output.append("\n\t\t\t<array>\n\t\t\t\t<dict>")
+            self.output.append("\n\t\t\t\t\t<key>Class</key>")
+            self.output.append("\n\t\t\t\t\t<string>ShellScript</string>")
+            self.output.append("\n\t\t\t\t\t<key>ShellPath</key>")
+            self.output.append("\n\t\t\t\t\t<string>"+ _template_script_shell_path +"</string>")
+            self.output.append("\n\t\t\t\t\t<key>ShellScript</key>")
+            self.output.append("\n\t\t\t\t\t<string>\n\t\t\t\t\t\t" + script_file.read() + "\n\t\t\t\t\t</string>")
+            self.output.append("\n\t\t\t</dict>\n\t\t\t\t</array>")
+            self.output.append("\n\t</dict>\n\t\t</array>")
+
         self.generate_definitions()
         self.generate_nodes()
         self.output.append( _template_close_body )
@@ -245,7 +265,7 @@ class Xcode4Template(object):
     #
     #   Generates the template directory.
     #
-    def pack_template_dir ( self, full_output_path ):
+    def pack_template_dir ( self, full_output_path ):      
         if full_output_path is None:
             full_output_path = os.path.abspath("./UntitledTemplate")
             
@@ -282,6 +302,8 @@ def help():
     print "\t-d one or more space separated directories (e.g -d \"box2d/ someLib/ someOtherLib/\")"
     print "\t-g group (group name for Xcode template)"
     print "\t-o output (output path)"
+    print "\t--script Specify Script to be run in the compile phases"
+    print "\t--shell_path Specify script shell path (defaults to /bin/bash)"
     print "\t--description \"Xcode Template description\""
     print "\t--identifier (string to identify this template)"
     print "\t--ancestors (string separated by spaces containing all ancestor ids)"
@@ -302,12 +324,12 @@ if __name__ == "__main__":
     
     argv = sys.argv[1:]
     try:                                
-        opts, args = getopt.getopt(argv, "d:g:i:a:c:o:", ["directories=","group=", "identifier=", "ancestors=", "concrete=", "output=", "settings=", "description=", "ignore_files="])
+        opts, args = getopt.getopt(argv, "d:g:i:a:c:o:", ["directories=","group=", "identifier=", "ancestors=", "concrete=", "output=", "settings=", "description=", "ignore_files=", "script=", "shell_path="])
         for opt, arg in opts:
             
             if opt in ("-d","--directory"):
                 for directory in arg.split(" "):
-                    directory = os.path.abspath(directory.strip('/'))
+                    directory = os.path.abspath(directory)
                     directories.append(directory)
                     
             elif opt in ("-g","--group"):
@@ -335,6 +357,12 @@ if __name__ == "__main__":
                 for directory in arg.split(" "):
                     directory = os.path.abspath(directory.strip('/'))
                     ignored_files.append(directory)
+
+            elif opt in ("--script"):
+                _template_script = arg
+
+            elif opt in ("--shell_path"):
+                _template_script_shell_path = arg               
                 
     except getopt.GetoptError,e:
         print e
